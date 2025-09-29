@@ -1,3 +1,43 @@
+<script setup>
+import { useAuthStore } from '@/stores/auth';
+import { useNewsStore } from '@/stores/news';
+import { computed } from 'vue';
+
+    const props = defineProps({
+        news: {
+            type: Object,
+            required: true
+        }
+    })
+
+    const userStore = useAuthStore();
+    
+    const hasDetails = computed(() => {
+        return props.news.reason && props.news.summary;
+    })
+    const shortContent = computed(() => {
+        return props.news.content.length > 200 ? props.news.content.substr(0, 200) + '...' : props.news.content;
+    })
+    const isLoggedIn = computed(() => {
+        return userStore.isLoggedIn;
+    })
+    
+    const emit = defineEmits(['show-dialog', 'fetch-summary']);
+    
+    function showDialog(){
+        emit('show-dialog');
+    }
+    function fetchSummary(){
+        if(this.isLoading) return;
+        this.isLoading = true;
+        emit('fetch-summary');
+    }
+    function toggleUpvote(newsId){
+        useNewsStore().toggleUpvote(newsId);
+    }
+    
+
+</script>
 <template>
     <div class="news-item">
         <div class="container" >
@@ -23,43 +63,6 @@
     </div>
 </template>
 
-<script>
-import { useAuthStore } from '@/stores/auth';
-import { useNewsStore } from '@/stores/news';
-export default {
-    props: {
-        news: {
-            type: Object,
-            required: true
-        }
-    },
-    computed: {
-        hasDetails() {
-            return this.news.reason && this.news.summary;
-        },
-        shortContent() {
-            return this.news.content.length > 200 ? this.news.content.substr(0, 200) + '...' : this.news.content;
-        },
-        isLoggedIn(){
-            const userStore = useAuthStore();
-            return userStore.isLoggedIn;
-        }
-    },
-    methods:{
-        showDialog(){
-            this.$emit('show-dialog');
-        },
-        fetchSummary(){
-            if(this.isLoading) return;
-            this.isLoading = true;
-            this.$emit('fetch-summary');
-        },
-        toggleUpvote(newsId){
-            useNewsStore().toggleUpvote(newsId);
-        }
-    }
-};
-</script>
 
 <style scoped>
 .news-item {

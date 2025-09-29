@@ -1,3 +1,25 @@
+<script setup>
+import { useAuthStore } from '@/stores/auth';
+import { computed, ref } from 'vue';
+
+
+    const name = ref('NavBar');
+    const userStore = useAuthStore();
+    
+    const isLoggedIn = computed(() => {
+        return userStore.isLoggedIn;
+    })
+    const getUserName = computed(() => {
+        return userStore.getUserName;
+    })
+
+    
+    function logout(){
+        userStore.logout();
+    }
+    
+
+</script>
 <template>
     <nav class="navbar">
         <div class="title"> <RouterLink to="/overview">價格追蹤小幫手</RouterLink></div>
@@ -11,29 +33,6 @@
     </nav>
 </template>
 
-<script>
-import { useAuthStore } from '@/stores/auth';
-
-export default {
-    name: 'NavBar',
-    computed: {
-        isLoggedIn(){
-            const userStore = useAuthStore();
-            return userStore.isLoggedIn;
-        },
-        getUserName(){
-            const userStore = useAuthStore();
-            return userStore.getUserName;
-        }
-    },
-    methods: {
-        logout(){
-            const userStore = useAuthStore();
-            userStore.logout();
-        }
-    }
-};
-</script>
 
 <style scoped>
 .navbar {
