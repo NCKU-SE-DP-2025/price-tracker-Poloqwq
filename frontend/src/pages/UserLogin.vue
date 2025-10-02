@@ -1,3 +1,19 @@
+<script setup>
+import { useAuthStore } from '@/stores/auth';
+import { ref, computed } from 'vue';
+
+const username = ref('');
+const password = ref('');
+
+const userStore = useAuthStore();
+
+function login() {    
+    userStore.login(username.value, password.value);
+}
+
+const loginError = computed(() => userStore.getLoginError);
+
+</script>
 <template>
     <div class="login-page">
         <h1>使用者登入</h1>
@@ -15,30 +31,6 @@
     </div>
 </template>
 
-<script>
-import { useAuthStore } from '@/stores/auth';
-
-export default {
-    data() {
-        return {
-            username: '',
-            password: ''
-        };
-    },
-    methods: {
-        login() {
-            const userStore = useAuthStore();
-            userStore.login(this.username, this.password);
-        }
-    },
-    computed: {
-        loginError(){
-            const userStore = useAuthStore();
-            return userStore.getLoginError;
-        }
-    }
-}
-</script>
 
 <style scoped>
 .login-page {

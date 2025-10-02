@@ -1,3 +1,38 @@
+<script setup>
+import { usePricesStore } from '@/stores/prices';
+import Categories from '@/constants/categories';
+import TrendingTable from '@/components/TrendingTable.vue';
+import TrendingChart from '@/components/TrendingChart.vue';
+import { ref, computed, watch } from 'vue';
+
+const store = usePricesStore();
+const selectedCategory = ref('');
+const selectedProduct = ref('');
+const productList = ref([]);
+const productData = ref(null);
+
+const categoryKeys = computed(() => {
+    return Object.keys(Categories); 
+});
+const products = computed(() => {
+    return selectedCategory.value ? store.getPricesByCategory(selectedCategory.value) : [];
+});
+
+
+function categoryName(category) {
+    return Categories[category];
+}
+
+watch(selectedCategory, ()=>{
+    selectedProduct.value = '';
+    productList.value = store.getProductList(selectedCategory.value);
+    productData.value = null;
+})
+watch(selectedProduct, ()=>{console.log(selectedProduct)});
+
+store.fetchPrices();
+
+</script>
 <template>
     <div class="wrapper">
         <h1>物價趨勢</h1>
@@ -22,57 +57,6 @@
     </div>
 </template>
 
-<script>
-import { usePricesStore } from '@/stores/prices';
-import Categories from '@/constants/categories';
-import TrendingTable from '@/components/TrendingTable.vue';
-import TrendingChart from '@/components/TrendingChart.vue';
-
-export default {
-    components: {
-        TrendingTable,
-        TrendingChart
-    },
-    data() {
-        return {
-            selectedCategory: '',
-            selectedProduct: '',
-            productList: [],
-        };
-    },
-    computed: {
-        store() {
-            return usePricesStore();
-        },
-        categoryKeys() {
-            return Object.keys(Categories);
-        },
-        products() {
-            return this.selectedCategory ? this.store.getPricesByCategory(this.selectedCategory) : [];
-        },
-    },
-    methods: {
-        categoryName(category) {
-            return Categories[category];
-        }
-    },
-    watch: {
-        selectedCategory() {
-            this.selectedProduct = '';
-            const store = usePricesStore();
-            this.productList = store.getProductList(this.selectedCategory);
-            this.productData = null;
-        },
-        selectedProduct() {
-            console.log(this.selectedProduct);
-        }
-    },
-    created() {
-        const store = usePricesStore();
-        store.fetchPrices();
-    }
-};
-</script>
 
 
 <style scoped>

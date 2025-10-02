@@ -1,3 +1,50 @@
+<script setup>
+    import Categories from '@/constants/categories';
+    import { computed, onMounted } from 'vue';
+
+    const props = defineProps({
+        category: {
+            type: String,
+            required: true
+        },  
+        priceData: {
+            type: Array,
+            required: true
+        },
+        isLoading: {
+            type: Boolean,
+            required: true
+        },
+        errorMessage: {
+            type: String,
+            required: false
+        },
+    })
+    
+    
+    const categoryName = computed(() =>{
+        return (Categories[props.category]);
+    })
+    const latestDataTime = computed(() =>{
+        let timeTmp = props.priceData[0].時間終點.split('-');
+        return timeTmp[0] + '.' + timeTmp[1];
+    })
+
+    
+    
+    function latestPrice(prices_str) {
+        let number = prices_str.split(',').map(Number);
+        let i = number.length - 1;
+        while (i >= 0 && number[i]==0) {
+            i--;
+        }
+        return i==-1 ? "-" : number[i];
+    
+    }
+
+</script>
+
+
 <template>
     <div class="category-price-wrapper">
         <h2>{{ categoryName }}</h2>
@@ -22,49 +69,6 @@
     </div>
 </template>
 
-<script>
-import Categories from '@/constants/categories';
-
-export default {
-    props: {
-        category: {
-            type: String,
-            required: true
-        },
-        priceData: {
-            type: Array,
-            required: true
-        },
-        isLoading: {
-            type: Boolean,
-            required: true
-        },
-        errorMessage: {
-            type: String,
-            required: false
-        },
-    },
-    computed: {
-        categoryName() {
-            return Categories[this.category];
-        },
-        latestDataTime(){
-            let timeTmp = this.priceData[0].時間終點.split('-');
-            return timeTmp[0] + '.' + timeTmp[1];
-        }
-    },
-    methods: {
-        latestPrice(prices_str) {
-            let number = prices_str.split(',').map(Number);
-            let i = number.length - 1;
-            while (i >= 0 && number[i]==0) {
-                i--;
-            }
-            return i==-1 ? "-" : number[i];
-        }
-    }
-};
-</script>
 
 <style scoped>
 .error {
