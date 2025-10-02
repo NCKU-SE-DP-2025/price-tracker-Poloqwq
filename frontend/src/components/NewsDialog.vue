@@ -1,30 +1,3 @@
-<script setup>
-import { computed } from 'vue';
-
-    const props = defineProps({
-        news: {
-            type: Object,
-            required: true
-        },
-        visible: {
-            type: Boolean,
-            default: false
-        }
-    })
-    
-    const emit = defineEmits(['update:visible']);
-    function close() {
-        emit('update:visible', false);
-    }
-
-
-    const formattedContent = computed(() => {
-        if(!props.news.content) return '';
-        return props.news.content.split('\r\n');
-    })
-
-    
-</script>
 <template>
     <div v-if="visible" class="cover">
         <div class="news-dialog">
@@ -40,6 +13,31 @@ import { computed } from 'vue';
     </div>
 </template>
 
+<script>
+export default {
+    props: {
+        news: {
+            type: Object,
+            required: true
+        },
+        visible: {
+            type: Boolean,
+            default: false
+        }
+    },
+    methods: {
+        close() {
+            this.$emit('update:visible', false);
+        }
+    },
+    computed:{
+        formattedContent() {
+            if(!this.news.content) return '';
+            return this.news.content.split('\r\n');
+        }
+    }
+};
+</script>
 
 <style scoped>
 .news-dialog {

@@ -1,38 +1,3 @@
-<script setup>
-import CategoryPrice from '@/components/CategoryPrice.vue';
-import Categories from '@/constants/categories';
-import { usePricesStore } from '@/stores/prices';
-import { computed, ref, onMounted } from 'vue';
-
-const prices = ref({});
-
-const store = usePricesStore();
-    
-const categoryList = computed(() => {
-    return Object.keys(Categories);
-});
-const isLoading = computed(() => {
-    return store.isLoading;
-});
-const errorMessage = computed(() => {
-    return store.errorMessage;
-});
-const updateTime = computed(() => {
-    return store.updatedTime;
-});
-
-
-function getPriceData(category){
-    return store.getPricesByCategory(category); 
-}
-
-store.fetchPrices();
-
-// onMounted(() => {
-//     store.fetchPrices();
-// });
-
-</script>
 <template>
     <div class="wrapper">
         <h1>各類商品物價概覽</h1>
@@ -44,6 +9,50 @@ store.fetchPrices();
     </div>
 </template>
 
+<script>
+import CategoryPrice from '@/components/CategoryPrice.vue';
+import Categories from '@/constants/categories';
+import { usePricesStore } from '@/stores/prices';
+
+export default {
+    name: 'PriceOverview',
+    data() {
+        return {
+            prices: {},
+        };
+    },
+    components: {
+        CategoryPrice
+    },
+    computed: {
+        categoryList() {
+            return Object.keys(Categories);
+        },
+        isLoading(){
+            const store = usePricesStore();
+            return store.isLoading;
+        },
+        errorMessage(){
+            const store = usePricesStore();
+            return store.errorMessage;
+        },
+        updateTime(){
+            const store = usePricesStore();
+            return store.updatedTime;
+        }
+    },
+    methods:{
+        getPriceData(category){
+            const store = usePricesStore();
+            return store.getPricesByCategory(category);
+        }    
+    },
+    created() {
+        const store = usePricesStore();
+        store.fetchPrices();
+    }
+};
+</script>
 
 <style scoped>
 .wrapper{

@@ -1,42 +1,3 @@
-<script setup>
-import { useNewsStore } from '@/stores/news';
-import { onMounted } from 'vue';
-import NewsItem from '@/components/NewsItem.vue';
-import NewsDialog from '@/components/NewsDialog.vue';
-import { ref, computed } from 'vue';
-
-
-    const prompt = ref('');
-    const newsStore = useNewsStore();
-    const selectedNews = ref(null);
-    const isDialogVisible = ref(false);
-
-
-    onMounted(() => {
-        newsStore.fetchNews();
-    });
-
-    const newsList = computed(() => newsStore.getNews);
-    const isLoading = computed(() => newsStore.isLoading);
-    const isEmpty = computed(() => newsStore.newsList.length === 0);
-    
-    
-    function searchNewsBasedOnPrompt() {
-        if (prompt.value.trim()) {
-            newsStore.promptSearchNews(prompt.value);
-            prompt.value = '';
-        }
-    }
-    function showDialog(news) {
-        selectedNews.value = news;
-        isDialogVisible.value = true;
-    }
-    function fetchSummary(content, index){
-        newsStore.fetchNewsSummary(content, index);
-    }
-    
-
-</script>
 <template>
     <div class="wrapper">
         <h1>相關新聞</h1>
@@ -58,6 +19,58 @@ import { ref, computed } from 'vue';
     </div>
 </template>
 
+<script>
+import { useNewsStore } from '@/stores/news';
+import { onMounted } from 'vue';
+import NewsItem from '@/components/NewsItem.vue';
+import NewsDialog from '@/components/NewsDialog.vue';
+
+export default {
+    components: {
+        NewsItem,
+        NewsDialog
+    },
+    data() {
+        return {
+            prompt: '',
+            newsStore: useNewsStore(),
+            selectedNews: null,
+            isDialogVisible: false
+        };
+    },
+    created() {
+        onMounted(() => {
+            this.newsStore.fetchNews();
+        });
+    },
+    computed: {
+        newsList() {
+            return this.newsStore.getNews;
+        },
+        isLoading() {
+            return this.newsStore.isLoading;
+        },
+        isEmpty() {
+            return this.newsStore.newsList.length === 0;
+        }
+    },
+    methods: {
+        searchNewsBasedOnPrompt() {
+            if (this.prompt.trim()) {
+                this.newsStore.promptSearchNews(this.prompt);
+                this.prompt = '';
+            }
+        },
+        showDialog(news) {
+            this.selectedNews = news;
+            this.isDialogVisible = true;
+        },
+        fetchSummary(content, index){
+            this.newsStore.fetchNewsSummary(content, index);
+        }
+    }
+};
+</script>
 
 <style scoped>
 .wrapper {
