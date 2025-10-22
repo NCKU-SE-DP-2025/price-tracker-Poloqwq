@@ -129,9 +129,10 @@ from sqlalchemy.orm import Session
 
 def add_article_to_db(news_data):
     """
-    add new to db
-    :param news_data: news info
-    :return:
+    add article to db.
+
+    :param news_data: news article info
+    :return None:
     """
     session = Session()
     session.add(NewsArticle(
@@ -148,11 +149,11 @@ def add_article_to_db(news_data):
 
 def get_new_info(search_term, is_initial=False):
     """
-    get new
+    get news from external API.
 
-    :param search_term:
-    :param is_initial:
-    :return:
+    :param search_term: search term
+    :param is_initial: 
+    :return list of news data:
     """
     all_news_data = []
     # iterate pages to get more news data, not actually get all news data
@@ -182,17 +183,17 @@ def get_new_info(search_term, is_initial=False):
         all_news_data = response.json()["lists"]
     return all_news_data
 
-def get_new(is_initial=False):
+def fetch_and_store_news(is_initial=False):
     """
-    get new info
+    fetch relevant news and store in database
 
     :param is_initial:
-    :return:
+    :return none:
     """
     news_data = get_new_info("價格", is_initial=is_initial)
     for news in news_data:
         title = news["title"]
-        m = [
+        message = [
             {
                 "role": "system",
                 "content": "你是一個關聯度評估機器人，請評估新聞標題是否與「民生用品的價格變化」相關，並給予'high'、'medium'、'low'評價。(僅需回答'high'、'medium'、'low'三個詞之一)",
@@ -201,7 +202,7 @@ def get_new(is_initial=False):
         ]
         ai = OpenAI(api_key="xxx").chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=m,
+            messages=message,
         )
         relevance = ai.choices[0].message.content
         if relevance == "high":
@@ -248,9 +249,9 @@ def start_scheduler():
     db = SessionLocal()
     if db.query(NewsArticle).count() == 0:
         # should change into simple factory pattern
-        get_new()
+        fetch_and_store_news()
     db.close()
-    bgs.add_job(get_new, "interval", minutes=100)
+    bgs.add_job(fetch_and_store_news, "interval", minutes=100)
     bgs.start()
 
 
@@ -357,10 +358,11 @@ def get_article_upvote_details(article_id, userid, db):
 @app.get("/api/v1/news/news")
 def read_news(db=Depends(get_db)):
     """
-    read new
+    list out all the news in database
+    display each article's upvotes
 
-    :param db:
-    :return:
+    :param db: database
+    :return list of article_properties:
     """
     news = db.query(NewsArticle).order_by(NewsArticle.time.desc()).all()
     result = []
@@ -380,11 +382,12 @@ def read_user_news(
         user=Depends(authenticate_user_token)
 ):
     """
-    read user new
+    list out all the news in database
+    display each article's upvotes and user's upvotes on each article
 
-    :param db:
-    :param user:
-    :return:
+    :param db: database
+    :param user: user_token
+    :return list of article_properties:
     """
     news = db.query(NewsArticle).order_by(NewsArticle.time.desc()).all()
     result = []
