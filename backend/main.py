@@ -127,7 +127,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 
-def add_new(news_data):
+def add_article_to_db(news_data):
     """
     add new to db
     :param news_data: news info
@@ -224,7 +224,7 @@ def get_new(is_initial=False):
                 "time": time,
                 "content": paragraphs,
             }
-            m = [
+            message = [
                 {
                     "role": "system",
                     "content": "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})",
@@ -234,13 +234,13 @@ def get_new(is_initial=False):
 
             completion = OpenAI(api_key="xxx").chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=m,
+                messages=message,
             )
             result = completion.choices[0].message.content
             result = json.loads(result)
             detailed_news["summary"] = result["影響"]
             detailed_news["reason"] = result["原因"]
-            add_new(detailed_news)
+            add_article_to_db(detailed_news)
 
 
 @app.on_event("startup")
@@ -263,7 +263,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
 
-def session_opener():
+def get_db():
     session = Session(bind=engine)
     try:
         yield session
@@ -276,16 +276,16 @@ def verify(p1, p2):
     return pwd_context.verify(p1, p2)
 
 
-def check_user_password_is_correct(db, n, pwd):
-    OuO = db.query(User).filter(User.username == n).first()
-    if not verify(pwd, OuO.hashed_password):
+def check_user_password_is_correct(db, username, password):
+    user = db.query(User).filter(User.username == username).first()
+    if not verify(password, user.hashed_password):
         return False
-    return OuO
+    return user
 
 
 def authenticate_user_token(
     token = Depends(oauth2_scheme),
-    db = Depends(session_opener)
+    db = Depends(get_db)
 ):
     payload = jwt.decode(token, '1892dhianiandowqd0n', algorithms=["HS256"])
     return db.query(User).filter(User.username == payload.get("sub")).first()
@@ -306,7 +306,7 @@ def create_access_token(data, expires_delta=None):
 
 @app.post("/api/v1/users/login")
 async def login_for_access_token(
-        form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(session_opener)
+        form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     """login"""
     user = check_user_password_is_correct(db, form_data.username, form_data.password)
@@ -319,7 +319,7 @@ class UserAuthSchema(BaseModel):
     username: str
     password: str
 @app.post("/api/v1/users/register")
-def create_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
+def create_user(user: UserAuthSchema, db: Session = Depends(get_db)):
     """create user"""
     hashed_password = pwd_context.hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password)
@@ -337,17 +337,17 @@ def read_users_me(user=Depends(authenticate_user_token)):
 _id_counter = itertools.count(start=1000000)
 
 
-def get_article_upvote_details(article_id, uid, db):
+def get_article_upvote_details(article_id, userid, db):
     cnt = (
         db.query(user_news_association_table)
         .filter_by(news_articles_id=article_id)
         .count()
     )
     voted = False
-    if uid:
+    if userid:
         voted = (
                 db.query(user_news_association_table)
-                .filter_by(news_articles_id=article_id, user_id=uid)
+                .filter_by(news_articles_id=article_id, user_id=userid)
                 .first()
                 is not None
         )
@@ -355,7 +355,7 @@ def get_article_upvote_details(article_id, uid, db):
 
 
 @app.get("/api/v1/news/news")
-def read_news(db=Depends(session_opener)):
+def read_news(db=Depends(get_db)):
     """
     read new
 
@@ -364,10 +364,10 @@ def read_news(db=Depends(session_opener)):
     """
     news = db.query(NewsArticle).order_by(NewsArticle.time.desc()).all()
     result = []
-    for n in news:
-        upvotes, upvoted = get_article_upvote_details(n.id, None, db)
+    for article in news:
+        upvotes, upvoted = get_article_upvote_details(article.id, None, db)
         result.append(
-            {**n.__dict__, "upvotes": upvotes, "is_upvoted": upvoted}
+            {**article.__dict__, "upvotes": upvotes, "is_upvoted": upvoted}
         )
     return result
 
@@ -376,20 +376,20 @@ def read_news(db=Depends(session_opener)):
     "/api/v1/news/user_news"
 )
 def read_user_news(
-        db=Depends(session_opener),
-        u=Depends(authenticate_user_token)
+        db=Depends(get_db),
+        user=Depends(authenticate_user_token)
 ):
     """
     read user new
 
     :param db:
-    :param u:
+    :param user:
     :return:
     """
     news = db.query(NewsArticle).order_by(NewsArticle.time.desc()).all()
     result = []
     for article in news:
-        upvotes, upvoted = get_article_upvote_details(article.id, u.id, db)
+        upvotes, upvoted = get_article_upvote_details(article.id, user.id, db)
         result.append(
             {
                 **article.__dict__,
@@ -406,7 +406,7 @@ class PromptRequest(BaseModel):
 async def search_news(request: PromptRequest):
     prompt = request.prompt
     news_list = []
-    m = [
+    message = [
         {
             "role": "system",
             "content": "你是一個關鍵字提取機器人，用戶將會輸入一段文字，表示其希望看見的新聞內容，請提取出用戶希望看見的關鍵字，請截取最重要的關鍵字即可，避免出現「新聞」、「資訊」等混淆搜尋引擎的字詞。(僅須回答關鍵字，若有多個關鍵字，請以空格分隔)",
@@ -416,7 +416,7 @@ async def search_news(request: PromptRequest):
 
     completion = OpenAI(api_key="xxx").chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=m,
+        messages=message,
     )
     keywords = completion.choices[0].message.content
     # should change into simple factory pattern
@@ -457,7 +457,7 @@ async def news_summary(
         payload: NewsSumaryRequestSchema, u=Depends(authenticate_user_token)
 ):
     response = {}
-    m = [
+    message = [
         {
             "role": "system",
             "content": "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})",
@@ -467,7 +467,7 @@ async def news_summary(
 
     completion = OpenAI(api_key="xxx").chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=m,
+        messages=message,
     )
     result = completion.choices[0].message.content
     if result:
@@ -477,35 +477,35 @@ async def news_summary(
     return response
 
 
-@app.post("/api/v1/news/{id}/upvote")
+@app.post("/api/v1/news/{article_id}/upvote")
 def upvote_article(
-        id,
-        db=Depends(session_opener),
-        u=Depends(authenticate_user_token),
+        article_id,
+        db=Depends(get_db),
+        user=Depends(authenticate_user_token),
 ):
-    message = toggle_upvote(id, u.id, db)
+    message = toggle_article_upvote(article_id, user.id, db)
     return {"message": message}
 
 
-def toggle_upvote(n_id, u_id, db):
+def toggle_article_upvote(article_id, user_id, db):
     existing_upvote = db.execute(
         select(user_news_association_table).where(
-            user_news_association_table.c.news_articles_id == n_id,
-            user_news_association_table.c.user_id == u_id,
+            user_news_association_table.c.news_articles_id == article_id,
+            user_news_association_table.c.user_id == user_id,
         )
     ).scalar()
 
     if existing_upvote:
         delete_stmt = delete(user_news_association_table).where(
-            user_news_association_table.c.news_articles_id == n_id,
-            user_news_association_table.c.user_id == u_id,
+            user_news_association_table.c.news_articles_id == article_id,
+            user_news_association_table.c.user_id == user_id,
         )
         db.execute(delete_stmt)
         db.commit()
         return "Upvote removed"
     else:
         insert_stmt = insert(user_news_association_table).values(
-            news_articles_id=n_id, user_id=u_id
+            news_articles_id=article_id, user_id=user_id
         )
         db.execute(insert_stmt)
         db.commit()
