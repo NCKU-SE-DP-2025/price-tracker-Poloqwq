@@ -74,7 +74,7 @@ sentry_sdk.init(
 )
 
 app = FastAPI()
-bgs = BackgroundScheduler()
+background_scheduler = BackgroundScheduler()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app.add_middleware(
@@ -251,13 +251,13 @@ def start_scheduler():
         # should change into simple factory pattern
         fetch_and_store_news()
     db.close()
-    bgs.add_job(fetch_and_store_news, "interval", minutes=100)
-    bgs.start()
+    background_scheduler.add_job(fetch_and_store_news, "interval", minutes=100)
+    background_scheduler.start()
 
 
 @app.on_event("shutdown")
 def shutdown_scheduler():
-    bgs.shutdown()
+    background_scheduler.shutdown()
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
