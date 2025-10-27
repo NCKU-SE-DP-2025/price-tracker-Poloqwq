@@ -147,7 +147,7 @@ def add_article_to_db(news_data):
     session.close()
 
 
-def get_new_info(search_term, is_initial=False):
+def get_news_info(search_term, is_initial=False):
     """
     get news from external API.
 
@@ -190,7 +190,7 @@ def fetch_and_store_news(is_initial=False):
     :param is_initial:
     :return none:
     """
-    news_data = get_new_info("價格", is_initial=is_initial)
+    news_data = get_news_info("價格", is_initial=is_initial)
     for news in news_data:
         title = news["title"]
         message = [
@@ -423,7 +423,7 @@ async def search_news(request: PromptRequest):
     )
     keywords = completion.choices[0].message.content
     # should change into simple factory pattern
-    news_items = get_new_info(keywords, is_initial=False)
+    news_items = get_news_info(keywords, is_initial=False)
     for news in news_items:
         try:
             response = requests.get(news["titleLink"])
@@ -452,12 +452,12 @@ async def search_news(request: PromptRequest):
             print(e)
     return sorted(news_list, key=lambda x: x["time"], reverse=True)
 
-class NewsSumaryRequestSchema(BaseModel):
+class NewsSummaryRequestSchema(BaseModel):
     content: str
 
 @app.post("/api/v1/news/news_summary")
 async def news_summary(
-        payload: NewsSumaryRequestSchema, u=Depends(authenticate_user_token)
+        payload: NewsSummaryRequestSchema, user=Depends(authenticate_user_token)
 ):
     response = {}
     message = [
