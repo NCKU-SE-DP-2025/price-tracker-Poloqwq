@@ -1,6 +1,6 @@
 import requests
 from typing import Optional
-from .constants import PriceSettings
+from .constants import NECESSITIES_PRICE_API_URL
 
 
 
@@ -14,5 +14,5 @@ class PriceService:
         if commodity:
             params["Name"] = commodity
 
-        response = requests.get(PriceSettings.NECESSITIES_PRICE_API_URL, params=params)
+        response = requests.get(NECESSITIES_PRICE_API_URL, params=params)
         return response.json()
