@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from src.auth.models import User
+from src.auth.config import PWD_CONTEXT
 
 
 class AuthService:
@@ -12,7 +13,7 @@ class AuthService:
         self.db = db
         self.secret_key = secret_key
         self.algorithm = algorithm
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        self.pwd_context = PWD_CONTEXT
     
     def hash_password(self, password: str) -> str:
         return self.pwd_context.hash(password)
