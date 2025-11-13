@@ -6,7 +6,7 @@ on:
       - 'main'
       - 'develop'
       - 'refactor/project-structure'
-      - 'fix/integration-tests'
+      - 'fix/integration-test'
   pull_request:
     branches:
       - 'main'
