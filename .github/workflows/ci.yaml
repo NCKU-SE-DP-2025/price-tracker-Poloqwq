@@ -4,13 +4,18 @@ on:
   push:
     branches:
       - 'main'
+      - 'develop'
+      - 'refactor/project-structure'
+      - 'fix/integration-tests'
   pull_request:
     branches:
       - 'main'
-
+      - 'develop'
+      - 'refactor/project-structure'
+  workflow_dispatch:
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: [F74146864]
 
     steps:
       - name: Checkout code
