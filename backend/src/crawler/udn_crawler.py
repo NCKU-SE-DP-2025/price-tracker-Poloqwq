@@ -100,6 +100,10 @@ class UDNCrawler(NewsCrawlerBase):
         return params
 
     def _perform_request(self, url: str | None = None, params: dict | None = None) -> Response:
+
+        if url is None:
+            url = self.news_website_url
+
         if self._is_valid_url(url) is False:
             raise DomainMismatchException(url=url)
 
@@ -130,7 +134,7 @@ class UDNCrawler(NewsCrawlerBase):
     def _extract_news(soup: BeautifulSoup, url: str) -> News:
         title = soup.find("h1", class_="article-content__title").text
         time = soup.find("time", class_="article-content__time").text
-        content_section = soup.find("section", class_="article-content__paragraph")
+        content_section = soup.find("section", class_="article-content__editor")
         paragraphs = [
                 p.text
                 for p in content_section.find_all("p")
