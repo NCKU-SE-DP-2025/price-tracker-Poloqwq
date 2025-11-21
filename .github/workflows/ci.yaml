@@ -7,11 +7,13 @@ on:
       - 'develop'
       - 'refactor/project-structure'
       - 'fix/integration-test'
+      - 'refactor/crawler-oop-implementation'
   pull_request:
     branches:
       - 'main'
       - 'develop'
       - 'refactor/project-structure'
+      - 'fix/integration-test'
   workflow_dispatch:
 jobs:
   test:
@@ -45,6 +47,13 @@ jobs:
         run: |
           cd backend
           pytest tests/integration --cov=src --cov-report=xml --disable-warnings
+
+      - name: Run unit tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          cd backend
+          pytest tests/unit --cov=src --cov-report=xml --disable-warnings
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
