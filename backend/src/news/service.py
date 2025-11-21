@@ -9,6 +9,7 @@ from sqlalchemy import select, insert, delete
 from openai import OpenAI
 from src.news.models import NewsArticle, user_news_association_table
 from src.news.config import NewsConfig
+from src.crawler.udn_crawler import UDNCrawler, NewsWithSummary
 
 class OpenAIService:
     
@@ -69,7 +70,7 @@ class NewsScraperService:
     @staticmethod
     def fetch_news_list(search_term: str, page: int = 1) -> List[dict]:
         params = {
-            "page": page,
+            "page": page,   
             "id": f"search:{quote(search_term)}",
             "channelId": 2,
             "type": "searchword",
@@ -114,10 +115,10 @@ class NewsScraperService:
 
 class NewsService:
     
-    def __init__(self, db: Session, openai_service: OpenAIService, scraper_service: NewsScraperService):
+    def __init__(self, db: Session, openai_service: OpenAIService, scraper_service: UDNCrawler):
         self.db = db
         self.openai_service = openai_service
-        self.scraper_service = scraper_service
+        self.udn_service = scraper_service
         self._id_counter = itertools.count(start=1000000)
     
     def add_article_to_db(self, news_data: dict) -> None:
@@ -134,38 +135,50 @@ class NewsService:
     
     def fetch_and_store_news(self, search_term: str = "價格", is_initial: bool = False) -> None:
         if is_initial:
-            news_list = self.scraper_service.fetch_news_list_multiple_pages(search_term)
+            news_list = self.udn_service.startup(search_term)
         else:
-            news_list = self.scraper_service.fetch_news_list(search_term)
+            news_list = self.udn_service.get_headline(search_term, page=1)
         
         for news_item in news_list:
-            relevance = self.openai_service.assess_relevance(news_item["title"])
+            relevance = self.openai_service.assess_relevance(news_item.title)
             
             if relevance == "high":
-                detailed_news = self.scraper_service.scrape_article_details(news_item["titleLink"])
+                detailed_news = self.udn_service.parse(news_item.url)
                 
                 if detailed_news:
-                    content_text = " ".join(detailed_news["content"])
-                    summary_data = self.openai_service.generate_summary(content_text)
+                    summary_data = self.openai_service.generate_summary(detailed_news.content)
                     
-                    detailed_news["summary"] = summary_data["影響"]
-                    detailed_news["reason"] = summary_data["原因"]
+                    detailed_news.summary = summary_data["影響"]
+                    detailed_news.reason = summary_data["原因"]
+                    news_with_summary = NewsWithSummary(
+                        title=detailed_news.title,
+                        url=detailed_news.url,
+                        time=detailed_news.time,
+                        content=detailed_news.content,
+                        summary=detailed_news.summary,
+                        reason=detailed_news.reason
+                    )
+                    self.udn_service.save(news_with_summary, self.db)
                     
-                    self.add_article_to_db(detailed_news)
     
     def search_news(self, prompt: str) -> List[dict]:
         keywords = self.openai_service.extract_keywords(prompt)
         
-        news_items = self.scraper_service.fetch_news_list(keywords)
+        news_items = self.udn_service.get_headline(keywords, page=1)
         
         news_list = []
         for news_item in news_items:
-            detailed_news = self.scraper_service.scrape_article_details(news_item["titleLink"])
+            detailed_news = self.udn_service.parse(news_item.url)
             
             if detailed_news:
-                detailed_news["content"] = " ".join(detailed_news["content"])
-                detailed_news["id"] = next(self._id_counter)
-                news_list.append(detailed_news)
+                listed_news = {
+                    "title": detailed_news.title,
+                    "url": detailed_news.url,
+                    "time": detailed_news.time,
+                    "content": detailed_news.content,
+                }
+                listed_news["id"] = next(self._id_counter)
+                news_list.append(listed_news)
         
         return sorted(news_list, key=lambda x: x["time"], reverse=True)
     
