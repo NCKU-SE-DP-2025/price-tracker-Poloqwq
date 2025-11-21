@@ -12,6 +12,8 @@ from src.auth.models import User
 
 from src.news.schemas import NewsSummaryRequestSchema
 from src.auth.config import PWD_CONTEXT as pwd_context
+from src.crawler.crawler_base import Headline
+
 from unittest.mock import Mock
 
 
@@ -135,13 +137,13 @@ def mock_openai(mocker, return_content):
 def test_search_news(mocker):
     mock_openai(mocker, "keywords")
 
-    mocker.patch("src.news.service.NewsScraperService.fetch_news_list_multiple_pages", return_value=[
-        {"titleLink": "http://example.com/news1"}
+    mocker.patch("src.crawler.udn_crawler.UDNCrawler.get_headline", return_value=[
+        Headline(title="Test Title", url="http://example.udn.com/news1")
     ])
 
     mock_response = mocker.Mock()
     mock_response.json.return_value = {"lists": [
-        {"titleLink": "http://example.com/news1"}
+        {"titleLink": "http://example.udn.com/news1"}
     ]}
     mock_response.text = """
         <html>
