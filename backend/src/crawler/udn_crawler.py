@@ -64,7 +64,7 @@ class UDNCrawler(NewsCrawlerBase):
         """
         return self.get_headline(search_term, page=(1, 10))
 
-    def get_headline(self, search_term: str, page: int | tuple[int, int]) -> list[Headline]:
+    def get_headline(self, search_term: str, page: int | tuple[int, int] = 1 ) -> list[Headline]:
 
         # Calculate the range of pages to fetch news from.
         # If 'page' is a tuple, unpack it and create a range representing those pages (inclusive).
