@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from src.database import SessionLocal
-from src.news.service import NewsService, OpenAIService, NewsScraperService
+from src.news.service import NewsService, OpenAIService
 from src.news.models import NewsArticle
 from src.news.config import OPENAI_API_KEY
 from src.crawler.udn_crawler import UDNCrawler

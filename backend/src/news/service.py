@@ -63,56 +63,6 @@ class OpenAIService:
         )
         return completion.choices[0].message.content
 
-
-class NewsScraperService:
-    
-    
-    @staticmethod
-    def fetch_news_list(search_term: str, page: int = 1) -> List[dict]:
-        params = {
-            "page": page,   
-            "id": f"search:{quote(search_term)}",
-            "channelId": 2,
-            "type": "searchword",
-        }
-        response = requests.get(NewsConfig.UDN_API_URL, params=params)
-        return response.json()["lists"]
-    
-    @staticmethod
-    def fetch_news_list_multiple_pages(search_term: str, num_pages: int = 9) -> List[dict]:
-        all_news = []
-        for page in range(1, num_pages + 1):
-            news_list = NewsScraperService.fetch_news_list(search_term, page)
-            all_news.extend(news_list)
-        return all_news
-    
-    @staticmethod
-    def scrape_article_details(url: str) -> Optional[dict]:
-        try:
-            response = requests.get(url)
-            soup = BeautifulSoup(response.text, "html.parser")
-            
-            title = soup.find("h1", class_="article-content__title").text
-            time = soup.find("time", class_="article-content__time").text
-            content_section = soup.find("section", class_="article-content__editor")
-            
-            paragraphs = [
-                p.text
-                for p in content_section.find_all("p")
-                if p.text.strip() != "" and "▪" not in p.text
-            ]
-            
-            return {
-                "url": url,
-                "title": title,
-                "time": time,
-                "content": paragraphs,
-            }
-        except Exception as e:
-            print(f"Error scraping article {url}: {e}")
-            return None
-
-
 class NewsService:
     
     def __init__(self, db: Session, openai_service: OpenAIService, scraper_service: UDNCrawler):
