@@ -1,4 +1,9 @@
 .pytest_cache
 __pycache__
+.venv
+.vscode
+.coverage
+coverage.xml
+test.db
 .env
 .venv
