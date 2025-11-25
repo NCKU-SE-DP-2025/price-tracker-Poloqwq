@@ -1,6 +1,6 @@
 import requests
 from typing import Optional
-from .constants import NECESSITIES_PRICE_API_URL
+from src.price.constants import NECESSITIES_PRICE_API_URL
 
 
 
