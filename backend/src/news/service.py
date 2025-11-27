@@ -13,7 +13,7 @@ from src.crawler.udn_crawler import UDNCrawler, NewsWithSummary
 
 class OpenAIService:
     
-    def __init__(self, api_key: str, model: str = "gpt-3.5-turbo"):
+    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
         self.client = OpenAI(api_key=api_key)
         self.model = model
     
