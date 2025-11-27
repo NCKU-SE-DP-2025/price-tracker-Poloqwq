@@ -1,20 +1,20 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from src.database import SessionLocal
-from src.news.service import NewsService, OpenAIService, NewsScraperService
+from src.news.service import NewsService, OpenAIService
 from src.news.models import NewsArticle
 from src.news.config import OPENAI_API_KEY
-
+from src.crawler.udn_crawler import UDNCrawler
 
 class NewsScheduler:
     
     def __init__(self):
         self.background_scheduler = BackgroundScheduler()
-
+        self.udn_crawler = UDNCrawler()
     def start(self):
         db = SessionLocal()
         if db.query(NewsArticle).count() == 0:
             openai_service = OpenAIService(api_key=OPENAI_API_KEY)
-            scraper_service = NewsScraperService()
+            scraper_service = self.udn_crawler
             news_service = NewsService(db, openai_service, scraper_service)
             news_service.fetch_and_store_news(is_initial=True)
     
@@ -23,7 +23,7 @@ class NewsScheduler:
         def fetch_news_job():
             db = SessionLocal()
             openai_service = OpenAIService(api_key=OPENAI_API_KEY)
-            scraper_service = NewsScraperService()
+            scraper_service = self.udn_crawler
             news_service = NewsService(db, openai_service, scraper_service)
             news_service.fetch_and_store_news(is_initial=False)
             db.close()
